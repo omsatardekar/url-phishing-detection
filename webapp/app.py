@@ -1,28 +1,20 @@
-import streamlit as st
+from flask import Flask, request, jsonify, render_template
 from tensorflow import keras
 from urllib.parse import urlparse
 import numpy as np
 import re
+from flask_cors import CORS
 
+app = Flask(__name__)
+CORS(app)
+
+# Load the model
 def load_model():
-    model=keras.models.load_model('Malicious_URL_Prediction.h5')
-    return model
-with st.spinner("Loading Model...."):
-    model=load_model()
+    return keras.models.load_model('Malicious_URL_Prediction.h5')  # Adjusted path
 
-col1, col2, col3 = st.columns(3)
+model = load_model()
 
-with col1:
-    st.write(' ')
-
-
-with col3:
-    st.write(' ')
-
-st.markdown("<h1 style='text-align: center; color: #14559E'>URL Genie</h1>", unsafe_allow_html=True)
-st.markdown("<h3 style='text-align: center; color: #494848;'>Malicious URL Detection Model made using Python</h3>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #494848;'>This program utilizes a Multilayer Perceptron Neural Network model with optimized hyper-parameters using genetic algorithms to perform malicous URL detection</p>", unsafe_allow_html=True)
-
+# Feature extraction functions
 def fd_length(url):
     urlpath= urlparse(url).path
     try:
@@ -84,24 +76,31 @@ def extract_features(url):
     features = np.array([output]) 
     return features
 
-def predict(val):
-    st.write(f'Classifying URL: {val}')
-    with st.spinner("Classifying..."):
-        input = extract_features(val)
-        print(input.shape)
-        for item in input:
-            print(type(item))
-        pred_test = model.predict(input)
-        percentage_value = pred_test[0][0] * 100
-        if (pred_test[0] < 0.5):
-            st.write(f'<span style="color:green;">✅ **SAFE with {percentage_value:.2f}% malicious confidence**</span>', unsafe_allow_html=True)
-        else: 
-            st.write(f'<span style="color:red;">⛔️ **MALICOUS with {percentage_value:.2f}% malicious confidence**</span>', unsafe_allow_html=True)
-        print(input, pred_test)
+@app.route('/', methods=['GET'])
+def home():
+    return render_template('index.html')
 
+@app.route('/predict', methods=['POST'])
+def predict():
+    try:
+        data = request.get_json()
+        url = data['url']
+        
+        input_features = extract_features(url)
+        prediction = model.predict(input_features)
+        percentage_value = prediction[0][0] * 100
+        
+        return jsonify({
+            'url': url,
+            'is_malicious': bool(prediction[0] >= 0.5),
+            'confidence': float(percentage_value),
+            'status': 'success'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
 
-value = st.text_input("Enter URL to scan", "https://www.google.com")
-submit = st.button("Classify URL")
-
-if submit:
-    predict(value)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001)
