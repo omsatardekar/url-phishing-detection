@@ -4,219 +4,581 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>URL Phishing Detector</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
         body {
-            font-family: 'Inter', sans-serif;
-            line-height: 1.6;
-            background-color: #f5f5f5;
-            color: #333;
+            font-family: 'Poppins', sans-serif;
+            background: url('{{ url_for('static', filename='abcd.jpg') }}') no-repeat center center;
+            background-size: cover;
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
+        .page-background {
+            background: url('{{ url_for('static', filename='abc.jpg') }}') no-repeat center center;
+            background-size: cover;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            color: #2c3e50;
-            margin-bottom: 1rem;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 1.1rem;
-        }
-
-        .url-form {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .input-group {
+        .intro-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
             display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
         }
 
-        input[type="text"] {
-            flex: 1;
-            padding: 0.8rem 1rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: -1;
         }
 
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 0.8rem 2rem;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        button:hover {
-            background-color: #2980b9;
-        }
-
-        .result {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            border-radius: 8px;
-            display: none;
-        }
-
-        .safe {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        .malicious {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .loading {
-            display: none;
+        .quote-container {
             text-align: center;
-            margin-top: 1rem;
+            color: white;
+            margin-bottom: 20px;
         }
 
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
+        .quote-container h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .quote-container p {
+            font-size: 1.2rem;
+            font-weight: 300;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
         }
 
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
+        .start-btn {
+            padding: 15px 40px;
+            background: linear-gradient(270deg, #ff8c00, #ff0080, #8000ff);
+            background-size: 400% 400%;
+            color: white;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            animation: pulse 2s infinite;
         }
 
-        .feature-item {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 0.5rem;
-            border-radius: 4px;
-            font-size: 0.9rem;
+        .start-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(255, 255, 255, 0.8); }
+            100% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); }
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .animated-gradient {
+            background: linear-gradient(270deg, #ff8c00, #ff0080, #8000ff);
+            background-size: 600% 600%;
+            animation: gradientBG 8s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @media (max-width: 768px) {
+            .quote-container h1 {
+                font-size: 2rem;
+            }
+            .quote-container p {
+                font-size: 1rem;
+            }
+
+            .start-btn {
+                font-size: 1.2rem;
+                padding: 12px 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .quote-container h1 {
+                font-size: 1.8rem;
+            }
+            .quote-container p {
+                font-size: 0.9rem;
+            }
+
+            .start-btn {
+                font-size: 1rem;
+                padding: 10px 25px;
+            }
+        }
+
+       
+        .menu-transition {
+            transition: transform 0.3s ease-out;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>URL Phishing Detector</h1>
-            <p>Check if a URL is potentially malicious using machine learning</p>
+<body class="min-h-screen flex flex-col page-background">
+
+    <!-- Intro Screen -->
+    <div id="introScreen" class="intro-screen">
+        <div class="overlay"></div>
+        <div class="flex flex-col justify-center items-center h-full text-center px-4">
+            <div class="quote-container">
+                <h1>"Stay Ahead of the Phishers"</h1>
+                <p>Your first line of defense in the digital world.</p>
+            </div>
+            <button class="start-btn" onclick="startApp()">Enter the Safe Zone</button>
         </div>
+    </div>
 
-        <div class="url-form">
-            <div class="input-group">
-                <input type="text" id="urlInput" placeholder="Enter URL to check (e.g., https://example.com)">
-                <button onclick="checkURL()">Analyze</button>
+    
+    <nav class="animated-gradient text-white p-4 shadow-lg fixed w-full top-0 z-50 hidden" id="navbar">
+        <div class="container mx-auto flex justify-between items-center">
+            <!-- Brand -->
+            <div class="text-2xl font-bold">Phishing Detector</div>
+
+            <!-- Hamburger Icon for Mobile -->
+            <div class="md:hidden">
+                <button id="hamburger" class="text-2xl">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
 
-            <div class="loading">
-                <div class="loading-spinner"></div>
-                <p>Analyzing URL...</p>
+            <!-- Menu (hidden by default on mobile) -->
+            <ul class="hidden md:flex space-x-6 text-lg">
+                <li><a href="#home" onclick="showPage('home')" class="hover:text-yellow-300 transition">Home</a></li>
+                <li><a href="#about" onclick="showPage('about')" class="hover:text-yellow-300 transition">About</a></li>
+                <li><a href="#report" onclick="showPage('report')" class="hover:text-yellow-300 transition">Report URL</a></li>
+                <li><a href="#login" onclick="showPage('login')" class="hover:text-yellow-300 transition">Login</a></li>
+                <li><a href="#signup" onclick="showPage('signup')" class="hover:text-yellow-300 transition">Sign Up</a></li>
+            </ul>
+
+            <!-- Mobile Menu (hidden by default) -->
+            <ul id="mobile-menu" class="md:hidden hidden flex-col space-y-4 absolute bg-black text-white p-6 top-16 right-0 w-48 menu-transition">
+                <li><a href="#home" onclick="showPage('home')" class="hover:text-yellow-300 transition">Home</a></li>
+                <li><a href="#about" onclick="showPage('about')" class="hover:text-yellow-300 transition">About</a></li>
+                <li><a href="#report" onclick="showPage('report')" class="hover:text-yellow-300 transition">Report URL</a></li>
+                <li><a href="#login" onclick="showPage('login')" class="hover:text-yellow-300 transition">Login</a></li>
+                <li><a href="#signup" onclick="showPage('signup')" class="hover:text-yellow-300 transition">Sign Up</a></li>
+            </ul>
+        </div>
+    </nav>
+
+   
+    <script>
+        const hamburger = document.getElementById('hamburger');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const navbar = document.getElementById('navbar');
+        const introScreen = document.getElementById('introScreen');
+
+        // Function to start the app and hide the intro screen, show navbar
+        function startApp() {
+            introScreen.style.display = 'none';  
+            navbar.classList.remove('hidden');  
+        }
+
+        // Toggle the mobile menu on click
+        hamburger.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            mobileMenu.classList.toggle('menu-transition');
+        });
+
+        // Close mobile menu after an item is clicked
+        const menuItems = document.querySelectorAll('#mobile-menu li a');
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+    </script>
+
+    <!-- Home Page -->
+    <div id="home" class="container mx-auto flex-1 flex items-center justify-center mt-20 hidden">
+        <div class="glass max-w-md w-full p-8 text-center">
+            <img src="{{ url_for('static', filename='phishing.gif') }}" alt="Phishing Alert" class="w-48 h-48 mx-auto mb-6">
+            <h1 class="text-3xl font-semibold text-white mb-4">Check if a URL is Safe</h1>
+
+            <div class="space-y-4">
+                <input type="text" id="urlInput" placeholder="Enter URL (e.g., https://example.com)" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-4 focus:ring-pink-500 focus:outline-none">
+                <button onclick="checkURL()" class="w-full bg-pink-600 text-white py-3 rounded-lg hover:bg-pink-700 transition">Analyze</button>
             </div>
 
-            <div id="result" class="result">
-                <!-- Results will be inserted here -->
-            </div>
+            <div id="result" class="mt-6 p-4 rounded-lg hidden bg-white bg-opacity-80 text-black"></div>
         </div>
     </div>
 
     <script>
+        function startApp() {
+            document.getElementById('introScreen').style.display = 'none';
+            document.getElementById('navbar').classList.remove('hidden');
+            document.getElementById('home').classList.remove('hidden');
+            document.body.classList.remove('page-background');
+        }
+
+        function checkURL() {
+            const urlInput = document.getElementById('urlInput').value;
+            const resultDiv = document.getElementById('result');
+            if (urlInput) {
+                resultDiv.textContent = 'Analyzing URL: ' + urlInput;
+                resultDiv.classList.remove('hidden');
+            } else {
+                resultDiv.textContent = 'Please enter a URL.';
+                resultDiv.classList.remove('hidden');
+            }
+        }
+
+        function showPage(page) {
+            const pages = ['home', 'about', 'report', 'login', 'signup'];
+            pages.forEach(p => document.getElementById(p)?.classList.add('hidden'));
+            document.getElementById(page)?.classList.remove('hidden');
+        }
+    </script>
+
+<!-- About Page -->
+<div id="about" class="container mx-auto flex-1 flex items-center justify-center mt-20 hidden">
+    <div class="glass max-w-4xl w-full p-8 text-center bg-white bg-opacity-80 rounded-xl shadow-xl">
+        <h2 class="text-3xl font-extrabold text-gray-900 mb-6">About URL Phishing Detector</h2>
+        <img src="{{ url_for('static', filename='phishing.gif') }}" alt="Phishing Alert" class="w-72 h-72 mx-auto mb-6 rounded-full border-4 border-teal-500 shadow-xl sm:w-60 sm:h-60 md:w-72 md:h-72 lg:w-80 lg:h-80">
+        <p class="text-lg text-gray-700 mt-4 font-medium leading-relaxed sm:text-base md:text-lg lg:text-xl">
+            Welcome to our cutting-edge **Phishing Detection System**, designed to help users stay safe while browsing the web. Using **advanced machine learning algorithms**, we analyze URLs in real-time to detect and block phishing threats, ensuring your online safety.
+        </p>
+        <p class="text-lg text-gray-700 mt-4 leading-relaxed sm:text-base md:text-lg lg:text-xl">
+            Our system is built with **user privacy and security** in mind, offering a seamless and reliable way to identify malicious URLs. Join thousands of users who trust our platform to stay ahead of phishing attacks.
+        </p>
+        <h3 class="text-2xl font-semibold text-gray-900 mt-6 sm:text-xl md:text-2xl lg:text-3xl">Key Features</h3>
+        <ul class="text-gray-700 mt-4 space-y-4 text-left mx-auto max-w-xl sm:text-base md:text-lg lg:text-xl">
+            <li class="flex items-center space-x-2">
+                <span class="text-teal-600 text-lg">✅</span>
+                <span class="text-gray-600 text-lg">Real-time phishing detection</span>
+            </li>
+            <li class="flex items-center space-x-2">
+                <span class="text-teal-600 text-lg">✅</span>
+                <span class="text-gray-600 text-lg">Machine learning-based analysis</span>
+            </li>
+            <li class="flex items-center space-x-2">
+                <span class="text-teal-600 text-lg">✅</span>
+                <span class="text-gray-600 text-lg">User-friendly reporting system</span>
+            </li>
+            <li class="flex items-center space-x-2">
+                <span class="text-teal-600 text-lg">✅</span>
+                <span class="text-gray-600 text-lg">Secure and privacy-focused</span>
+            </li>
+            <li class="flex items-center space-x-2">
+                <span class="text-teal-600 text-lg">✅</span>
+                <span class="text-gray-600 text-lg">Cross-platform compatibility</span>
+            </li>
+            <li class="flex items-center space-x-2">
+                <span class="text-teal-600 text-lg">✅</span>
+                <span class="text-gray-600 text-lg">Fast and accurate URL analysis</span>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- Report URL Page -->
+<div id="report" class="hidden max-w-6xl mx-auto mt-10 p-8 rounded-lg bg-black text-white shadow-xl grid grid-cols-1 md:grid-cols-2 gap-10">
+    <!-- Left Section: Form -->
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center">
+        <h2 class="text-3xl font-semibold text-gray-100 mb-4">Report a Suspicious URL</h2>
+        <p class="text-gray-400 mb-6">Help us improve security by reporting suspicious websites.</p>
+
+        <div class="space-y-6 w-full">
+            <!-- Email Input -->
+            <input type="email" id="reportEmail" placeholder="Enter your email" class="w-full p-4 border border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none transition duration-300 text-gray-900">
+            
+            <!-- URL Input -->
+            <input type="text" id="reportUrl" placeholder="Enter suspicious URL" class="w-full p-4 border border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none transition duration-300 text-gray-900">
+
+            <!-- Report Button -->
+            <button onclick="reportURL()" class="w-full py-3 px-6 rounded-lg text-white bg-pink-600 hover:bg-pink-700 transition-all duration-300">
+                Report URL
+            </button>
+        </div>
+    </div>
+
+    <!-- Right Section: Reported URLs Table -->
+    <div class="flex flex-col p-6 bg-gray-800 rounded-lg shadow-lg">
+        <h3 class="text-2xl font-semibold text-gray-100 mb-4">Reported URLs</h3>
+        <div class="mt-4 overflow-x-auto shadow-md rounded-lg">
+            <table class="w-full border-collapse text-sm text-gray-100">
+                <thead class="bg-gray-700">
+                    <tr>
+                        <th class="py-3 px-4 text-left">Email</th>
+                        <th class="py-3 px-4 text-left">URL</th>
+                        <th class="py-3 px-4 text-left w-full sm:w-32 md:w-40 lg:w-48">Time</th> <!-- Increased width for Time column -->
+                    </tr>
+                </thead>
+                <tbody id="reportTableBody">
+                    <!-- Table rows will be injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Function to report URL
+    function reportURL() {
+        const email = document.getElementById('reportEmail').value;
+        const url = document.getElementById('reportUrl').value;
+        if (email && url) {
+            const currentTime = new Date().toLocaleString();
+            const tableBody = document.getElementById('reportTableBody');
+            const newRow = document.createElement('tr');
+            newRow.classList.add('hover:bg-gray-600');
+            newRow.innerHTML = ` 
+                <td class="py-3 px-4">${email}</td>
+                <td class="py-3 px-4">${url}</td>
+                <td class="py-3 px-4">${currentTime}</td>
+            `;
+            tableBody.appendChild(newRow);
+
+            // Clear input fields after reporting
+            document.getElementById('reportEmail').value = '';
+            document.getElementById('reportUrl').value = '';
+        } else {
+            alert("Please fill out both fields!");
+        }
+    }
+</script>
+
+<div id="signup" class="hidden max-w-md mx-auto bg-gray-900 mt-20 p-8 rounded-xl shadow-2xl text-white flex flex-col items-center justify-center">
+    <h2 class="text-3xl font-semibold text-gray-100 mb-6">Sign Up</h2>
+    <form onsubmit="event.preventDefault(); signUp();" class="w-full space-y-6">
+        <!-- Full Name Input -->
+        <input type="text" id="signupName" placeholder="Full Name" class="w-full p-4 border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-4 focus:ring-pink-500 focus:outline-none transition duration-300">
+
+        <!-- Email Input -->
+        <input type="email" id="signupEmail" placeholder="Email" class="w-full p-4 border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-4 focus:ring-pink-500 focus:outline-none transition duration-300">
+
+        <!-- Password Input -->
+        <input type="password" id="signupPassword" placeholder="Password" class="w-full p-4 border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-4 focus:ring-pink-500 focus:outline-none transition duration-300">
+
+        <!-- Sign Up Button -->
+        <button type="submit" class="w-full py-3 px-6 rounded-lg text-white bg-pink-600 hover:bg-pink-700 transition-all duration-300">
+            Sign Up
+        </button>
+    </form>
+
+    <!-- Login Link -->
+    <p class="text-gray-400 mt-4 text-sm">Already have an account? 
+        <a href="#login" onclick="showPage('login')" class="text-pink-400 hover:text-pink-500 transition duration-300">Login</a>
+    </p>
+</div>
+
+
+    <!-- Login Form -->
+    <div id="login" class="hidden max-w-md mx-auto bg-gray-900 mt-20 p-8 rounded-xl shadow-2xl text-white flex flex-col items-center justify-center">
+        <h2 class="text-3xl font-semibold text-gray-100 mb-6">Login</h2>
+        <form onsubmit="event.preventDefault(); login();" class="w-full space-y-6">
+            <!-- Email Input -->
+            <input type="email" id="loginEmail" placeholder="Email" class="w-full p-4 border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-4 focus:ring-pink-500 focus:outline-none transition duration-300">
+    
+            <!-- Password Input -->
+            <input type="password" id="loginPassword" placeholder="Password" class="w-full p-4 border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-4 focus:ring-pink-500 focus:outline-none transition duration-300">
+    
+            <!-- Login Button -->
+            <button type="submit" class="w-full py-3 px-6 rounded-lg text-white bg-pink-600 hover:bg-pink-700 transition-all duration-300">
+                Login
+            </button>
+        </form>
+    
+        <!-- Signup Link -->
+        <p class="text-gray-400 mt-4 text-sm">Don't have an account? 
+            <a href="#signup" onclick="showPage('signup')" class="text-pink-400 hover:text-pink-500 transition duration-300">Sign Up</a>
+        </p>
+    </div>
+    
+    <script>
         async function checkURL() {
             const urlInput = document.getElementById('urlInput');
             const resultDiv = document.getElementById('result');
-            const loadingDiv = document.querySelector('.loading');
-
-            // Basic URL validation
+    
             if (!urlInput.value) {
                 alert('Please enter a URL');
                 return;
             }
-
-            // Show loading state
-            loadingDiv.style.display = 'block';
+    
             resultDiv.style.display = 'none';
-
+    
             try {
-                const response = await fetch('/predict', {
+                const response = await fetch('http://127.0.0.1:5000/predict', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: urlInput.value })
                 });
-
+    
                 const data = await response.json();
-
+    
                 if (data.status === 'success') {
-                    resultDiv.className = `result ${data.is_malicious ? 'malicious' : 'safe'}`;
-                    resultDiv.innerHTML = `
-                        <h3>${data.is_malicious ? '⚠️ Warning: Potentially Malicious URL' : '✅ Safe URL Detected'}</h3>
-                        <p><strong>URL:</strong> ${data.url}</p>
-                        <p><strong>Confidence:</strong> ${data.confidence.toFixed(2)}%</p>
-                    `;
+                    resultDiv.className = `mt-4 p-4 rounded-lg text-white ${data.is_malicious ? 'bg-red-500' : 'bg-green-500'} transition-all duration-300 ease-in-out`;
+                    resultDiv.innerHTML = `<h3 class="font-bold text-2xl">${data.is_malicious ? '❌ Malicious URL' : '✅ Safe URL'}</h3><p class="mt-2 text-lg">${data.url}</p>`;
                 } else {
                     throw new Error(data.message);
                 }
             } catch (error) {
-                resultDiv.className = 'result malicious';
-                resultDiv.innerHTML = `
-                    <h3>❌ Error</h3>
-                    <p>${error.message}</p>
-                `;
-            } finally {
-                loadingDiv.style.display = 'none';
+                resultDiv.className = 'mt-4 p-4 rounded-lg bg-red-500 text-white';
+                resultDiv.innerHTML = `<h3 class="font-bold text-2xl">❌ Error</h3><p class="mt-2">${error.message}</p>`;
+            } 
+            finally {
                 resultDiv.style.display = 'block';
             }
         }
 
-        // Allow Enter key to submit
-        document.getElementById('urlInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                checkURL();
+    async function signUp() {
+        const name = document.getElementById('signupName').value;
+        const email = document.getElementById('signupEmail').value;
+        const password = document.getElementById('signupPassword').value;
+
+        if (!name || !email || !password) {
+            alert('Please fill in all fields.');
+            return;
+        }
+
+        const data = { name, email, password };
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                alert('Signup successful! Please log in.');
+                showPage('login');
+            } else {
+                alert(result.message);
             }
-        });
+        } catch (error) {
+            console.error('Signup error:', error);
+            alert('An error occurred during signup.');
+        }
+    }
+
+    async function login() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        if (!email || !password) {
+            alert('Please enter both email and password.');
+            return;
+        }
+
+        const data = { email, password };
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                alert('Login successful!');
+                showPage('home');
+            } else {
+                alert('Invalid credentials. Please try again.');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('An error occurred during login.');
+        }
+    }
+
+
+        function showPage(page) {
+            document.getElementById('home').classList.add('hidden');
+            document.getElementById('report').classList.add('hidden');
+            document.getElementById('login').classList.add('hidden');
+            document.getElementById('about').classList.add('hidden');
+            document.getElementById('signup').classList.add('hidden');
+            document.getElementById(page).classList.remove('hidden');
+        }
+
+        async function reportURL() {
+            const email = document.getElementById('reportEmail').value;
+            const url = document.getElementById('reportUrl').value;
+
+            if (!email || !url) {
+                alert('Please enter both email and URL.');
+                return;
+            }
+
+            const data = { email, url };
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('URL Reported Successfully!');
+                    fetchReports();  // Refresh table
+                }
+            } catch (error) {
+                console.error('Error reporting URL:', error);
+            }
+
+            document.getElementById('reportEmail').value = '';
+            document.getElementById('reportUrl').value = '';
+        }
+
+        async function fetchReports() {
+            const reportTableBody = document.getElementById('reportTableBody');
+            reportTableBody.innerHTML = ''; // Clear existing table
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/reports');
+                const data = await response.json();
+
+                data.forEach(report => {
+                    const row = `<tr>
+                                    <td class="border border-gray-300 p-2">${report.email}</td>
+                                    <td class="border border-gray-300 p-2">${report.url}</td>
+                                    <td class="border border-gray-300 p-2">${report.time}</td>
+                                </tr>`;
+                    reportTableBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error fetching reports:', error);
+            }
+        }
+
+        // Call fetchReports() when page loads
+        document.addEventListener("DOMContentLoaded", fetchReports);
     </script>
+
 </body>
 </html>

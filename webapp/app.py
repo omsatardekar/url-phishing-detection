@@ -4,9 +4,101 @@ from urllib.parse import urlparse
 import numpy as np
 import re
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+import bcrypt
+import sqlite3
 
-app = Flask(__name__)
+
+
+app = Flask(__name__, static_folder='static')
 CORS(app)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///reports.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# Database Model for Reported URLs
+class Report(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), nullable=False)
+    url = db.Column(db.String(500), nullable=False)
+    reported_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# **Create Database Tables**
+with app.app_context():
+    db.create_all()
+
+# **Initialize User Database**
+def init_user_db():
+    with sqlite3.connect("users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute('''CREATE TABLE IF NOT EXISTS users (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            name TEXT,
+                            email TEXT UNIQUE,
+                            password TEXT)''')
+        conn.commit()
+
+init_user_db()
+
+# API to Report a URL
+@app.route('/report', methods=['POST'])
+def report_url():
+    data = request.json
+    new_report = Report(email=data['email'], url=data['url'])
+    db.session.add(new_report)
+    db.session.commit()
+    return jsonify({'message': 'Report saved successfully!'})
+
+# API to Fetch All Reports
+@app.route('/reports', methods=['GET'])
+def get_reports():
+    reports = Report.query.all()
+    reports_list = [{'email': r.email, 'url': r.url, 'time': r.reported_at.strftime('%Y-%m-%d %H:%M:%S')} for r in reports]
+    return jsonify(reports_list)
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({'status': 'error', 'message': 'Email and password required'}), 400
+
+    with sqlite3.connect("users.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT password FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+
+    if user and bcrypt.checkpw(password.encode('utf-8'), user[0].encode('utf-8')):
+        return jsonify({'status': 'success', 'message': 'Login successful'}), 200
+    else:
+        return jsonify({'status': 'error', 'message': 'Invalid credentials'}), 401
+    
+# **User Signup**
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.json
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not name or not email or not password:
+        return jsonify({'status': 'error', 'message': 'All fields are required'}), 400
+
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+    try:
+        with sqlite3.connect("users.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, hashed_password))
+            conn.commit()
+        return jsonify({'status': 'success', 'message': 'Signup successful'}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({'status': 'error', 'message': 'Email already registered'}), 400
+
 
 # Load the model
 def load_model():
@@ -53,6 +145,31 @@ def having_ip_address(url):
         # print 'No matching pattern found'
         return 1
 
+def is_legitimate_domain(url):
+    legitimate_domains = {
+        'google.com',
+        'mail.google.com',
+        'gmail.com',
+        'whatsapp.com',
+        'web.whatsapp.com',
+        'youtube.com',
+        'facebook.com',
+        'microsoft.com',
+        'outlook.com',
+        'linkedin.com',
+        'github.com',
+        'apple.com',
+        'icloud.com',
+        'amazon.com',
+        "github.com"
+    }
+    
+    try:
+        domain = urlparse(url).netloc.lower()
+        return any(domain.endswith(legitimate) for legitimate in legitimate_domains)
+    except:
+        return False
+
 def extract_features(url):
     # 'hostname_length', 'path_length', 'fd_length', 'count-', 'count@', 'count?', 'count%', 'count.', 'count=', 'count-http','count-https', 'count-www', 'count-digits','count-letters', 'count_dir', 'use_of_ip'
     hostname_length = len(urlparse(url).netloc)
@@ -86,6 +203,16 @@ def predict():
         data = request.get_json()
         url = data['url']
         
+        # Check for legitimate domains first
+        if is_legitimate_domain(url):
+            return jsonify({
+                'url': url,
+                'is_malicious': False,
+                'confidence': 5.0,  # Low percentage indicates high confidence in safety
+                'status': 'success'
+            })
+            
+        # Your existing prediction code
         input_features = extract_features(url)
         prediction = model.predict(input_features)
         percentage_value = prediction[0][0] * 100
@@ -103,4 +230,4 @@ def predict():
         }), 400
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001)
+    app.run(debug=True)
