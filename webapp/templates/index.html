@@ -175,7 +175,6 @@
                 <li><a href="#about" onclick="showPage('about')" class="hover:text-yellow-300 transition">About</a></li>
                 <li><a href="#report" onclick="showPage('report')" class="hover:text-yellow-300 transition">Report URL</a></li>
                 <li><a href="#login" onclick="showPage('login')" class="hover:text-yellow-300 transition">Login</a></li>
-                <li><a href="#signup" onclick="showPage('signup')" class="hover:text-yellow-300 transition">Sign Up</a></li>
             </ul>
 
             <!-- Mobile Menu (hidden by default) -->
@@ -184,7 +183,6 @@
                 <li><a href="#about" onclick="showPage('about')" class="hover:text-yellow-300 transition">About</a></li>
                 <li><a href="#report" onclick="showPage('report')" class="hover:text-yellow-300 transition">Report URL</a></li>
                 <li><a href="#login" onclick="showPage('login')" class="hover:text-yellow-300 transition">Login</a></li>
-                <li><a href="#signup" onclick="showPage('signup')" class="hover:text-yellow-300 transition">Sign Up</a></li>
             </ul>
         </div>
     </nav>
@@ -318,6 +316,7 @@
             <button onclick="reportURL()" class="w-full py-3 px-6 rounded-lg text-white bg-pink-600 hover:bg-pink-700 transition-all duration-300">
                 Report URL
             </button>
+            <div id="messageBox" style="display: none; padding: 10px; margin: 10px 0; border-radius: 5px;"></div>
         </div>
     </div>
 
@@ -418,23 +417,26 @@
         async function checkURL() {
             const urlInput = document.getElementById('urlInput');
             const resultDiv = document.getElementById('result');
-    
+        
             if (!urlInput.value) {
                 alert('Please enter a URL');
                 return;
             }
-    
-            resultDiv.style.display = 'none';
-    
+        
+            // Show "Analyzing..." message
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'mt-4 p-4 rounded-lg bg-yellow-500 text-white transition-all duration-300 ease-in-out';
+            resultDiv.innerHTML = '<h3 class="font-bold text-2xl">⏳ Analyzing...</h3><p class="mt-2 text-lg">Please wait while we check the URL.</p>';
+        
             try {
                 const response = await fetch('http://127.0.0.1:5000/predict', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: urlInput.value })
                 });
-    
+        
                 const data = await response.json();
-    
+        
                 if (data.status === 'success') {
                     resultDiv.className = `mt-4 p-4 rounded-lg text-white ${data.is_malicious ? 'bg-red-500' : 'bg-green-500'} transition-all duration-300 ease-in-out`;
                     resultDiv.innerHTML = `<h3 class="font-bold text-2xl">${data.is_malicious ? '❌ Malicious URL' : '✅ Safe URL'}</h3><p class="mt-2 text-lg">${data.url}</p>`;
@@ -444,11 +446,8 @@
             } catch (error) {
                 resultDiv.className = 'mt-4 p-4 rounded-lg bg-red-500 text-white';
                 resultDiv.innerHTML = `<h3 class="font-bold text-2xl">❌ Error</h3><p class="mt-2">${error.message}</p>`;
-            } 
-            finally {
-                resultDiv.style.display = 'block';
             }
-        }
+        }        
 
     async function signUp() {
         const name = document.getElementById('signupName').value;
@@ -525,35 +524,76 @@
             document.getElementById(page).classList.remove('hidden');
         }
 
+        function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.style.display = 'block';
+            messageBox.textContent = message;
+        
+            // Apply styling based on message type
+            switch (type) {
+                case 'success':
+                    messageBox.style.backgroundColor = '#d4edda';
+                    messageBox.style.color = '#155724';
+                    messageBox.style.border = '1px solid #c3e6cb';
+                    break;
+                case 'error':
+                    messageBox.style.backgroundColor = '#f8d7da';
+                    messageBox.style.color = '#721c24';
+                    messageBox.style.border = '1px solid #f5c6cb';
+                    break;
+                case 'warning':
+                    messageBox.style.backgroundColor = '#fff3cd';
+                    messageBox.style.color = '#856404';
+                    messageBox.style.border = '1px solid #ffeeba';
+                    break;
+                default:
+                    messageBox.style.backgroundColor = '#d1ecf1';
+                    messageBox.style.color = '#0c5460';
+                    messageBox.style.border = '1px solid #bee5eb';
+            }
+        
+            // Automatically hide the message after 3 seconds
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000);
+        }
+        
         async function reportURL() {
-            const email = document.getElementById('reportEmail').value;
-            const url = document.getElementById('reportUrl').value;
-
-            if (!email || !url) {
-                alert('Please enter both email and URL.');
+            const urlInput = document.getElementById('reportUrl');
+            const url = urlInput.value.trim();
+        
+            if (!url) {
+                showMessage('Oops! Please enter a valid URL before submitting.', 'warning');
                 return;
             }
-
-            const data = { email, url };
-
+        
             try {
                 const response = await fetch('http://127.0.0.1:5000/report', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify({ url })
                 });
-
-                if (response.ok) {
-                    alert('URL Reported Successfully!');
-                    fetchReports();  // Refresh table
+        
+                const result = await response.json();
+        
+                if (response.status === 401) {
+                    showMessage('You need to be logged in to report URLs. Redirecting you to the login page...', 'warning');
+                    showPage('login'); // Redirect to login page
+                } else if (response.ok) {
+                    showMessage('🎉 Success! The URL has been reported.', 'success');
+                    fetchReports();  // Refresh the report table
+                } else {
+                    showMessage(`⚠️ Something went wrong: ${result.message}`, 'error');
                 }
             } catch (error) {
                 console.error('Error reporting URL:', error);
+                showMessage('❌ An unexpected error occurred while reporting the URL. Please try again later.', 'error');
             }
-
-            document.getElementById('reportEmail').value = '';
-            document.getElementById('reportUrl').value = '';
-        }
+        
+            // Clear the input field after submission
+            urlInput.value = '';
+        }        
+        
 
         async function fetchReports() {
             const reportTableBody = document.getElementById('reportTableBody');
